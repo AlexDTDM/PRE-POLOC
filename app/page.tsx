@@ -350,7 +350,7 @@ export default function SeatBookingApp() {
                 <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">
                   {group.name} ({group.seats.length} seats)
                 </h3>
-                <div className={`grid gap-3 ${group.seats.length === 4 ? "grid-cols-4" : "grid-cols-7"}`}>
+                <div className="grid gap-3 grid-cols-7">
                   {group.seats.map((spotNumber) => {
                     const isTaken = isSeatTaken(selectedDay, spotNumber)
                     const owner = getSeatOwner(selectedDay, spotNumber)

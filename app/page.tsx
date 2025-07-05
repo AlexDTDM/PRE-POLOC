@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Calendar, Users, AlertTriangle } from "lucide-react"
+import { Calendar, Users, AlertTriangle, LogIn, User, Lock } from "lucide-react"
 
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -28,6 +28,14 @@ type LunchCounters = {
 }
 
 export default function SeatBookingApp() {
+  // Login state
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [loginUsername, setLoginUsername] = useState("")
+  const [loginPassword, setLoginPassword] = useState("")
+  const [loginError, setLoginError] = useState("")
+  const [currentUser, setCurrentUser] = useState("")
+
+  // Existing states
   const [selectedDay, setSelectedDay] = useState<string>("Monday")
   const [bookings, setBookings] = useState<BookingData>({})
   const [lunchCounters, setLunchCounters] = useState<LunchCounters>({})
@@ -42,6 +50,26 @@ export default function SeatBookingApp() {
     { value: "data-science", label: "Data Science", color: "bg-purple-500 border-purple-600" },
     { value: "hr", label: "HR", color: "bg-orange-500 border-orange-600" },
   ]
+
+  const handleLogin = () => {
+    // Simple fake login - accept any username/password combination
+    if (loginUsername.trim() && loginPassword.trim()) {
+      setIsLoggedIn(true)
+      setCurrentUser(loginUsername.trim())
+      setLoginError("")
+      setEmployeeName(loginUsername.trim()) // Pre-fill the booking form with logged-in user
+    } else {
+      setLoginError("Please enter both username and password")
+    }
+  }
+
+  const handleLogout = () => {
+    setIsLoggedIn(false)
+    setCurrentUser("")
+    setLoginUsername("")
+    setLoginPassword("")
+    setEmployeeName("")
+  }
 
   const getCurrentDay = () => {
     const today = new Date()
@@ -75,7 +103,6 @@ export default function SeatBookingApp() {
       return // Can't book taken seats
     }
     setSelectedSeat(seatNumber)
-    setEmployeeName("")
     setSelectedTeam("")
     setShowDialog(true)
   }
@@ -114,7 +141,6 @@ export default function SeatBookingApp() {
 
     setShowDialog(false)
     setSelectedSeat(null)
-    setEmployeeName("")
     setSelectedTeam("")
   }
 
@@ -137,16 +163,89 @@ export default function SeatBookingApp() {
     }))
   }
 
+  // Login Page
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-bold text-gray-800 flex items-center justify-center gap-2">
+              <LogIn className="h-8 w-8" />
+              Office Login
+            </CardTitle>
+            <p className="text-gray-600 mt-2">Sign in to access seat booking</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {loginError && (
+              <Alert className="border-red-200 bg-red-50">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800">{loginError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="username" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Username
+              </Label>
+              <Input
+                id="username"
+                type="text"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                placeholder="Enter your username"
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="Enter your password"
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              />
+            </div>
+
+            <Button onClick={handleLogin} className="w-full" disabled={!loginUsername.trim() || !loginPassword.trim()}>
+              Sign In
+            </Button>
+
+            <div className="text-center text-sm text-gray-500 mt-4">
+              <p>Demo: Use any username and password to login</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Main Booking Page (existing code)
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
+        {/* Header with Logout */}
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-gray-800 flex items-center justify-center gap-2">
-              <Calendar className="h-8 w-8" />
-              Office Seat Booking
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <div></div>
+              <CardTitle className="text-3xl font-bold text-gray-800 flex items-center justify-center gap-2">
+                <Calendar className="h-8 w-8" />
+                Office Seat Booking
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Welcome, {currentUser}</span>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  Logout
+                </Button>
+              </div>
+            </div>
           </CardHeader>
         </Card>
 

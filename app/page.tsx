@@ -12,7 +12,7 @@ import { Calendar, Users, AlertTriangle, LogIn, User, Lock } from "lucide-react"
 
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
-const OFFICE_SPOTS = Array.from({ length: 20 }, (_, i) => i + 1)
+const OFFICE_SPOTS = Array.from({ length: 32 }, (_, i) => i + 1)
 
 type BookingData = {
   [day: string]: {
@@ -44,6 +44,7 @@ export default function SeatBookingApp() {
   const [showDialog, setShowDialog] = useState(false)
   const [showAlert, setShowAlert] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState("")
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false)
 
   const TEAMS = [
     { value: "product", label: "Product", color: "bg-blue-500 border-blue-600" },
@@ -117,6 +118,10 @@ export default function SeatBookingApp() {
       setShowAlert(true)
       setTimeout(() => setShowAlert(false), 5000)
       // Still allow the booking to go through, just show the warning
+    } else {
+      // Show success message for future bookings
+      setShowSuccessAlert(true)
+      setTimeout(() => setShowSuccessAlert(false), 3000)
     }
 
     // Update bookings (this now happens regardless of the day)
@@ -269,6 +274,16 @@ export default function SeatBookingApp() {
           </Alert>
         )}
 
+        {/* Success Alert for future bookings */}
+        {showSuccessAlert && (
+          <Alert className="border-green-200 bg-green-50">
+            <AlertTriangle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              Seat booked successfully! Your lunch has been reserved.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Day Selection */}
         <Card>
           <CardHeader>
@@ -339,6 +354,7 @@ export default function SeatBookingApp() {
                     }
                   >
                     <div className="font-bold text-lg">{spotNumber}</div>
+                    {spotNumber <= 4 && <div className="text-xs text-center">Entrance</div>}
                     {isTaken && <div className="text-xs mt-1 break-words leading-tight">{owner}</div>}
                   </div>
                 )

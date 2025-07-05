@@ -16,7 +16,10 @@ const OFFICE_SPOTS = Array.from({ length: 20 }, (_, i) => i + 1)
 
 type BookingData = {
   [day: string]: {
-    [seatNumber: number]: string
+    [seatNumber: number]: {
+      employeeName: string
+      team: string
+    }
   }
 }
 
@@ -32,10 +35,27 @@ export default function SeatBookingApp() {
   const [employeeName, setEmployeeName] = useState("")
   const [showDialog, setShowDialog] = useState(false)
   const [showAlert, setShowAlert] = useState(false)
+  const [selectedTeam, setSelectedTeam] = useState("")
+
+  const TEAMS = [
+    { value: "product", label: "Product", color: "bg-blue-500 border-blue-600" },
+    { value: "data-science", label: "Data Science", color: "bg-purple-500 border-purple-600" },
+    { value: "hr", label: "HR", color: "bg-orange-500 border-orange-600" },
+  ]
 
   const getCurrentDay = () => {
     const today = new Date()
     return DAYS_OF_WEEK[today.getDay() === 0 ? 6 : today.getDay() - 1] // Adjust for Sunday = 0
+  }
+
+  const getCurrentDateFormatted = () => {
+    const today = new Date()
+    return today.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
   }
 
   const isSeatTaken = (day: string, seatNumber: number) => {
@@ -43,7 +63,11 @@ export default function SeatBookingApp() {
   }
 
   const getSeatOwner = (day: string, seatNumber: number) => {
-    return bookings[day]?.[seatNumber] || ""
+    return bookings[day]?.[seatNumber]?.employeeName || ""
+  }
+
+  const getSeatTeam = (day: string, seatNumber: number) => {
+    return bookings[day]?.[seatNumber]?.team || ""
   }
 
   const handleSeatClick = (seatNumber: number) => {
@@ -52,39 +76,46 @@ export default function SeatBookingApp() {
     }
     setSelectedSeat(seatNumber)
     setEmployeeName("")
+    setSelectedTeam("")
     setShowDialog(true)
   }
 
   const handleBookSeat = () => {
-    if (!selectedSeat || !employeeName.trim()) return
+    if (!selectedSeat || !employeeName.trim() || !selectedTeam) return
 
-    const isBookingForToday = selectedDay === "Monday" && getCurrentDay() === "Monday"
+    const currentDay = getCurrentDay()
+    const isBookingForToday = selectedDay === currentDay
 
     if (isBookingForToday) {
       setShowAlert(true)
-      setTimeout(() => setShowAlert(false), 3000)
-      setShowDialog(false)
-      return
+      setTimeout(() => setShowAlert(false), 5000)
+      // Still allow the booking to go through, just show the warning
     }
 
-    // Update bookings
+    // Update bookings (this now happens regardless of the day)
     setBookings((prev) => ({
       ...prev,
       [selectedDay]: {
         ...prev[selectedDay],
-        [selectedSeat]: employeeName.trim(),
+        [selectedSeat]: {
+          employeeName: employeeName.trim(),
+          team: selectedTeam,
+        },
       },
     }))
 
-    // Increment lunch counter
-    setLunchCounters((prev) => ({
-      ...prev,
-      [selectedDay]: (prev[selectedDay] || 0) + 1,
-    }))
+    // Only increment lunch counter if NOT booking for today
+    if (!isBookingForToday) {
+      setLunchCounters((prev) => ({
+        ...prev,
+        [selectedDay]: (prev[selectedDay] || 0) + 1,
+      }))
+    }
 
     setShowDialog(false)
     setSelectedSeat(null)
     setEmployeeName("")
+    setSelectedTeam("")
   }
 
   const handleCancelBooking = (day: string, seatNumber: number) => {
@@ -119,11 +150,23 @@ export default function SeatBookingApp() {
           </CardHeader>
         </Card>
 
+        {/* Current Day Display */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-lg text-gray-600">Today is</p>
+              <p className="text-2xl font-semibold text-gray-800">{getCurrentDateFormatted()}</p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Alert for Monday booking */}
         {showAlert && (
-          <Alert className="border-red-200 bg-red-50">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">Sorry, too late to book a lunch for today!</AlertDescription>
+          <Alert className="border-amber-200 bg-amber-50">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              Seat booked successfully! However, it's too late to reserve a meal for today.
+            </AlertDescription>
           </Alert>
         )}
 
@@ -159,8 +202,16 @@ export default function SeatBookingApp() {
                   <span>Available</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-red-500 rounded"></div>
-                  <span>Taken</span>
+                  <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                  <span>Product</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                  <span>Data Science</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                  <span>HR</span>
                 </div>
               </div>
             </CardTitle>
@@ -170,16 +221,18 @@ export default function SeatBookingApp() {
               {OFFICE_SPOTS.map((spotNumber) => {
                 const isTaken = isSeatTaken(selectedDay, spotNumber)
                 const owner = getSeatOwner(selectedDay, spotNumber)
+                const team = getSeatTeam(selectedDay, spotNumber)
+                const teamConfig = TEAMS.find((t) => t.value === team)
 
                 return (
                   <div
                     key={spotNumber}
                     className={`
-                      relative aspect-square rounded-lg border-2 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-2 text-center
+                      relative aspect-square rounded-lg border-2 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-2 text-center text-white
                       ${
                         isTaken
-                          ? "bg-red-500 border-red-600 text-white hover:bg-red-600"
-                          : "bg-green-500 border-green-600 text-white hover:bg-green-600 hover:scale-105"
+                          ? `${teamConfig?.color || "bg-red-500 border-red-600"} hover:opacity-90`
+                          : "bg-green-500 border-green-600 hover:bg-green-600 hover:scale-105"
                       }
                     `}
                     onClick={() =>
@@ -224,11 +277,27 @@ export default function SeatBookingApp() {
                   value={employeeName}
                   onChange={(e) => setEmployeeName(e.target.value)}
                   placeholder="Enter your name"
-                  onKeyDown={(e) => e.key === "Enter" && handleBookSeat()}
+                  onKeyDown={(e) => e.key === "Enter" && selectedTeam && handleBookSeat()}
                 />
               </div>
+              <div>
+                <Label htmlFor="team-select">Team</Label>
+                <select
+                  id="team-select"
+                  value={selectedTeam}
+                  onChange={(e) => setSelectedTeam(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">Select your team</option>
+                  {TEAMS.map((team) => (
+                    <option key={team.value} value={team.value}>
+                      {team.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="flex gap-2">
-                <Button onClick={handleBookSeat} disabled={!employeeName.trim()}>
+                <Button onClick={handleBookSeat} disabled={!employeeName.trim() || !selectedTeam}>
                   Book Seat
                 </Button>
                 <Button variant="outline" onClick={() => setShowDialog(false)}>

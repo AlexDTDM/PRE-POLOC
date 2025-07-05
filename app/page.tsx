@@ -14,6 +14,15 @@ const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "S
 
 const OFFICE_SPOTS = Array.from({ length: 32 }, (_, i) => i + 1)
 
+// Define seat groups
+const SEAT_GROUPS = [
+  { name: "Entrance", seats: [1, 2, 3, 4], label: "Entrance" },
+  { name: "Group 2", seats: [5, 6, 7, 8, 9, 10, 11], label: "Group 2" },
+  { name: "Group 3", seats: [12, 13, 14, 15, 16, 17, 18], label: "Group 3" },
+  { name: "Group 4", seats: [19, 20, 21, 22, 23, 24, 25], label: "Group 4" },
+  { name: "Group 5", seats: [26, 27, 28, 29, 30, 31, 32], label: "Group 5" },
+]
+
 type BookingData = {
   [day: string]: {
     [seatNumber: number]: {
@@ -97,6 +106,11 @@ export default function SeatBookingApp() {
 
   const getSeatTeam = (day: string, seatNumber: number) => {
     return bookings[day]?.[seatNumber]?.team || ""
+  }
+
+  const getSeatLabel = (seatNumber: number) => {
+    const group = SEAT_GROUPS.find((group) => group.seats.includes(seatNumber))
+    return group?.label || ""
   }
 
   const handleSeatClick = (seatNumber: number) => {
@@ -305,7 +319,7 @@ export default function SeatBookingApp() {
           </CardContent>
         </Card>
 
-        {/* Office Layout */}
+        {/* Office Layout - Grouped */}
         <Card>
           <CardHeader>
             <CardTitle className="text-xl flex items-center justify-between">
@@ -330,36 +344,43 @@ export default function SeatBookingApp() {
               </div>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-3">
-              {OFFICE_SPOTS.map((spotNumber) => {
-                const isTaken = isSeatTaken(selectedDay, spotNumber)
-                const owner = getSeatOwner(selectedDay, spotNumber)
-                const team = getSeatTeam(selectedDay, spotNumber)
-                const teamConfig = TEAMS.find((t) => t.value === team)
+          <CardContent className="space-y-6">
+            {SEAT_GROUPS.map((group, groupIndex) => (
+              <div key={groupIndex} className="space-y-3">
+                <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">
+                  {group.name} ({group.seats.length} seats)
+                </h3>
+                <div className={`grid gap-3 ${group.seats.length === 4 ? "grid-cols-4" : "grid-cols-7"}`}>
+                  {group.seats.map((spotNumber) => {
+                    const isTaken = isSeatTaken(selectedDay, spotNumber)
+                    const owner = getSeatOwner(selectedDay, spotNumber)
+                    const team = getSeatTeam(selectedDay, spotNumber)
+                    const teamConfig = TEAMS.find((t) => t.value === team)
 
-                return (
-                  <div
-                    key={spotNumber}
-                    className={`
-                      relative aspect-square rounded-lg border-2 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-2 text-center text-white
-                      ${
-                        isTaken
-                          ? `${teamConfig?.color || "bg-red-500 border-red-600"} hover:opacity-90`
-                          : "bg-green-500 border-green-600 hover:bg-green-600 hover:scale-105"
-                      }
-                    `}
-                    onClick={() =>
-                      isTaken ? handleCancelBooking(selectedDay, spotNumber) : handleSeatClick(spotNumber)
-                    }
-                  >
-                    <div className="font-bold text-lg">{spotNumber}</div>
-                    {spotNumber <= 4 && <div className="text-xs text-center">Entrance</div>}
-                    {isTaken && <div className="text-xs mt-1 break-words leading-tight">{owner}</div>}
-                  </div>
-                )
-              })}
-            </div>
+                    return (
+                      <div
+                        key={spotNumber}
+                        className={`
+                          relative aspect-square rounded-lg border-2 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center p-2 text-center text-white
+                          ${
+                            isTaken
+                              ? `${teamConfig?.color || "bg-red-500 border-red-600"} hover:opacity-90`
+                              : "bg-green-500 border-green-600 hover:bg-green-600 hover:scale-105"
+                          }
+                        `}
+                        onClick={() =>
+                          isTaken ? handleCancelBooking(selectedDay, spotNumber) : handleSeatClick(spotNumber)
+                        }
+                      >
+                        <div className="font-bold text-lg">{spotNumber}</div>
+                        {group.name === "Entrance" && <div className="text-xs text-center">Entrance</div>}
+                        {isTaken && <div className="text-xs mt-1 break-words leading-tight">{owner}</div>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
 
